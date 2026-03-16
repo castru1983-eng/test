@@ -303,7 +303,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({
       <div ref={scrollContainerRef} className="max-h-[700px] overflow-auto max-w-full custom-scrollbar relative bg-white pb-20">
         <table className="border-separate border-spacing-0 min-w-full table-fixed">
           <thead>
-            <tr className="sticky top-0 z-[60]">
+            <tr className="sticky top-0 z-[30]">
               {table.columns.map((col, idx) => {
                 const isFirstCol = idx === 0;
                 const colWidth = isFirstCol ? '200px' : '250px';
@@ -313,7 +313,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({
                     style={{ minWidth: colWidth }}
                     className={`p-3 border-b-4 border-r-2 border-black relative group text-center align-top transition-colors
                       ${isFirstCol 
-                        ? 'sticky left-0 z-[70] border-r-4 bg-yellow-400' 
+                        ? 'sticky left-0 z-[40] border-r-4 bg-yellow-400' 
                         : 'bg-white text-left'
                       }
                     `}

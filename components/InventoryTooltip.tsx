@@ -61,13 +61,13 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
       
       {showTooltip && (
         <div 
-          className={`absolute z-[200] left-1/2 -translate-x-1/2 w-max animate-bounce-short 
+          className={`absolute z-[9999] left-1/2 -translate-x-1/2 w-max 
             ${position === 'top' ? 'bottom-full mb-3' : 'top-full mt-3'}`}
         >
           {/* 隱形透明橋接器：填充提示框與文字間的間隙，防止滑鼠滑出 */}
-          <div className={`absolute left-0 right-0 h-4 bg-transparent ${position === 'top' ? 'top-full' : 'bottom-full'}`}></div>
+          <div className={`absolute left-0 right-0 h-8 bg-transparent ${position === 'top' ? 'top-full' : 'bottom-full'}`}></div>
 
-          <div className="bg-white border-4 border-black p-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative min-w-[200px]">
+          <div className="bg-white border-4 border-black p-4 rounded-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative min-w-[200px] animate-in fade-in zoom-in duration-150">
             {/* Tooltip 箭頭 */}
             <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-white transform rotate-45 border-black
               ${position === 'top' ? '-bottom-2.5 border-b-4 border-r-4' : '-top-2.5 border-t-4 border-l-4'}`}>
