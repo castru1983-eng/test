@@ -79,16 +79,28 @@ const App: React.FC = () => {
   const toggleInventoryConfirm = (partNumber: string, location: string) => {
     setInventoryData(prev => {
       const updated = { ...prev };
-      if (updated[partNumber] && updated[partNumber][location]) {
-        updated[partNumber] = {
-          ...updated[partNumber],
-          [location]: {
-            ...updated[partNumber][location],
-            confirmed: !updated[partNumber][location].confirmed
+      
+      // 模糊匹配料號
+      const pnKey = Object.keys(updated).find(k => k.toLowerCase() === partNumber.toLowerCase());
+      if (!pnKey) return prev;
+
+      // 模糊匹配廠區 (location)
+      const locKey = Object.keys(updated[pnKey]).find(
+        l => l.trim().toLowerCase().includes(location.trim().toLowerCase())
+      );
+
+      if (locKey) {
+        updated[pnKey] = {
+          ...updated[pnKey],
+          [locKey]: {
+            ...updated[pnKey][locKey],
+            confirmed: !updated[pnKey][locKey].confirmed
           }
         };
+        return updated;
       }
-      return updated;
+      
+      return prev;
     });
   };
 

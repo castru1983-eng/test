@@ -101,17 +101,28 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
         </div>
 
         <div 
-          className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all cursor-pointer select-none ${isConfirmed ? 'bg-green-100 border-green-600 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-400 hover:border-black hover:text-black'}`}
+          className={`group/btn flex items-center gap-3 p-4 rounded-xl border-4 transition-all cursor-pointer select-none active:scale-95 shadow-sm
+            ${isConfirmed 
+              ? 'bg-green-100 border-green-600 text-green-800 hover:bg-green-200' 
+              : 'bg-white border-black text-black hover:bg-yellow-50 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+            }`}
           onClick={(e) => {
-            e.preventDefault();
             e.stopPropagation();
             onToggleConfirm?.();
           }}
         >
-          <div className={`w-7 h-7 rounded border-2 flex items-center justify-center transition-all ${isConfirmed ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-gray-400 font-bold'}`}>
-            {isConfirmed && <i className="fas fa-check text-sm"></i>}
+          <div className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-all 
+            ${isConfirmed 
+              ? 'bg-green-600 border-green-600 text-white shadow-inner' 
+              : 'bg-white border-black group-hover/btn:border-green-600'
+            }`}
+          >
+            {isConfirmed && <i className="fas fa-check text-lg"></i>}
           </div>
-          <span className="font-black text-sm">數量核對正確</span>
+          <div className="flex flex-col">
+            <span className="font-black text-sm uppercase leading-tight">數量核對正確</span>
+            <span className="text-[9px] font-bold opacity-60">點擊切換狀態</span>
+          </div>
         </div>
       </div>
     </div>
@@ -120,11 +131,11 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
   return (
     <span 
       ref={triggerRef}
-      className={`relative inline-block cursor-help ${isConfirmed ? 'bg-green-50/50' : ''}`}
+      className={`relative inline-block cursor-help transition-all ${isConfirmed ? 'bg-green-50/50 rounded-sm px-0.5' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <span className={`border-b-2 border-dashed hover:bg-yellow-200 transition-colors ${isConfirmed ? 'border-green-600' : 'border-black'}`}>
+      <span className={`border-b-2 border-dashed hover:bg-yellow-200 transition-colors ${isConfirmed ? 'border-green-600 font-bold text-green-700' : 'border-black'}`}>
         {children}
         {isConfirmed && <i className="fas fa-check-circle text-green-600 ml-1 text-[10px]"></i>}
       </span>
