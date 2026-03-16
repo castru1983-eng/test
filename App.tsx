@@ -470,6 +470,46 @@ const App: React.FC = () => {
     link.click();
   };
 
+  const exportInventory = () => {
+    if (!inventoryData || Object.keys(inventoryData).length === 0) return;
+    
+    const escapeCSV = (str: string) => `"${(str || '').toString().replace(/"/g, '""')}"`;
+    
+    // 找出所有出現過的廠區名稱 (location)
+    const allLocations = new Set<string>();
+    Object.values(inventoryData).forEach(locMap => {
+      Object.keys(locMap).forEach(loc => allLocations.add(loc));
+    });
+    const locations = Array.from(allLocations).sort();
+
+    // 建立 CSV 標題：料號, 產品位置, 庫存數量, 數量確認
+    const headers = ['料號', '產品位置', '庫存數量', '數量確認'];
+    const rows: string[][] = [];
+
+    Object.entries(inventoryData).forEach(([partNumber, locMap]) => {
+      Object.entries(locMap).forEach(([location, data]) => {
+        rows.push([
+          partNumber,
+          location,
+          data.quantity.toString(),
+          data.confirmed ? 'V' : ''
+        ]);
+      });
+    });
+
+    const csvContent = [
+      headers.map(escapeCSV).join(','),
+      ...rows.map(row => row.map(escapeCSV).join(','))
+    ].join('\n');
+
+    const blob = new Blob([`\ufeff${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `更新後庫存表_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`;
+    link.click();
+  };
+
   const filteredTables = useMemo(() => {
     if (!activePage) return [];
     const q = searchQuery.toLowerCase().trim();
@@ -535,6 +575,24 @@ const App: React.FC = () => {
                   <i className="fas fa-file-excel mr-2"></i>匯入 Excel 數量表
                 </button>
                 <div className="h-8 w-[2px] bg-black/10 hidden lg:block mx-1"></div>
+                  <div className="flex bg-black/5 rounded-xl p-1 gap-1 border border-black/10">
+                    <button 
+                      onClick={handleInventoryClick} 
+                      className="bg-white hover:bg-yellow-50 text-black px-4 py-2 rounded-lg font-black text-sm border-2 border-black flex items-center gap-2 transition-all active:translate-y-0.5"
+                    >
+                      <i className="fas fa-file-excel text-green-600"></i>
+                      更新庫存表
+                    </button>
+                    {inventoryData && Object.keys(inventoryData).length > 0 && (
+                      <button 
+                        onClick={exportInventory} 
+                        title="匯出含核對紀錄的庫存表"
+                        className="bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg font-black text-sm border-2 border-black transition-all active:translate-y-0.5"
+                      >
+                        <i className="fas fa-file-export"></i>
+                      </button>
+                    )}
+                  </div>
                 <button onClick={handleImportClick} className="px-4 py-2.5 rounded-lg font-black border-2 border-black bg-white hover:bg-gray-100 transition-all active:translate-y-0.5 text-sm">
                   <i className="fas fa-file-import mr-2"></i>匯入 CSV
                 </button>
