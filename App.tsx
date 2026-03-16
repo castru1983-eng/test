@@ -80,14 +80,10 @@ const App: React.FC = () => {
     if (!partNumber || !location) return;
     
     setInventoryData(prev => {
-      // 使用深拷貝確保巢狀物件更新能觸發 React 重新渲染
       const next = JSON.parse(JSON.stringify(prev));
-      
-      // 1. 尋找匹配的料號鍵值 (不分大小寫)
       const pnKey = Object.keys(next).find(k => k.toLowerCase().trim() === partNumber.toLowerCase().trim());
       if (!pnKey) return prev;
 
-      // 2. 尋找匹配的廠區鍵值 (模糊匹配：互相包含則認定匹配)
       const locKey = Object.keys(next[pnKey]).find(l => {
         const k1 = l.toLowerCase().trim();
         const k2 = location.toLowerCase().trim();
@@ -95,14 +91,87 @@ const App: React.FC = () => {
       });
 
       if (locKey) {
-        // 切換確認狀態
-        next[pnKey][locKey].confirmed = !next[pnKey][locKey].confirmed;
+        const newStatus = !next[pnKey][locKey].confirmed;
+        next[pnKey][locKey].confirmed = newStatus;
+
+        // 同步回填到表格
+        setPages(currentPages => {
+          return currentPages.map(p => {
+            if (p.id !== activePageId) return p;
+            return {
+              ...p,
+              tables: p.tables.map(table => {
+                const confirmColIdx = table.columns.findIndex(c => c.trim() === '數量確認');
+                if (confirmColIdx === -1) return table;
+
+                const newRows = table.rows.map(row => {
+                  const hasPartNumber = row.some(cell => 
+                    cell.toString().toLowerCase().includes(partNumber.toLowerCase())
+                  );
+                  if (hasPartNumber) {
+                    const newRow = [...row];
+                    newRow[confirmColIdx] = newStatus ? 'OK' : '';
+                    return newRow;
+                  }
+                  return row;
+                });
+
+                return { ...table, rows: newRows };
+              })
+            };
+          });
+        });
+
         return next;
       }
-      
       return prev;
     });
   };
+
+  // 監聽表格變動，反向連動：手動打 OK 則自動勾選庫存提示
+  useEffect(() => {
+    if (!activePage) return;
+    
+    const nextInventory = JSON.parse(JSON.stringify(inventoryData));
+    let hasChange = false;
+
+    activePage.tables.forEach(table => {
+      const confirmColIdx = table.columns.findIndex(c => c.trim() === '數量確認');
+      if (confirmColIdx === -1) return;
+
+      table.rows.forEach(row => {
+        const confirmVal = row[confirmColIdx]?.toString().toUpperCase().trim();
+        const isOK = confirmVal === 'OK' || confirmVal === 'V' || confirmVal === 'TRUE';
+        
+        // 找出這一列中可能的料號並更新庫存狀態 (簡化邏輯：檢查所有欄位)
+        row.forEach((cell, idx) => {
+          if (idx === confirmColIdx) return;
+          const cellStr = cell.toString().trim();
+          if (!cellStr) return;
+
+          // 尋找匹配的料號鍵值
+          const pnKey = Object.keys(nextInventory).find(k => k.toLowerCase() === cellStr.toLowerCase());
+          if (pnKey) {
+            // 尋找匹配的廠區 (activePage.name)
+            const locKey = Object.keys(nextInventory[pnKey]).find(l => {
+              const k1 = l.toLowerCase().trim();
+              const k2 = activePage.name.toLowerCase().trim();
+              return k1.includes(k2) || k2.includes(k1);
+            });
+
+            if (locKey && nextInventory[pnKey][locKey].confirmed !== isOK) {
+              nextInventory[pnKey][locKey].confirmed = isOK;
+              hasChange = true;
+            }
+          }
+        });
+      });
+    });
+
+    if (hasChange) {
+      setInventoryData(nextInventory);
+    }
+  }, [pages, activePageId]); // 當頁面或表格內容變動時觸發
 
   const activePage = useMemo(() => 
     pages.find(p => p.id === activePageId) || null, 
