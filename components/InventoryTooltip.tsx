@@ -33,9 +33,9 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
             {/* Tooltip 底部箭頭 */}
             <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-b-4 border-r-4 border-black transform rotate-45"></div>
             
-            <h4 className="font-black text-xs uppercase mb-1 text-gray-500">{activePageName} 庫存數量</h4>
-            <div className="text-2xl font-black italic">
-               {inventoryValue !== undefined ? inventoryValue : <span className="text-red-500 text-sm">無資料</span>}
+            <h4 className="font-black text-[10px] uppercase mb-1 text-gray-400 tracking-wider">📍 {activePageName} 廠區庫存</h4>
+            <div className="text-4xl font-black italic tracking-tighter text-blue-600 drop-shadow-[2px_2px_0px_white] outline-black shadow-blue-200">
+               {inventoryValue !== undefined ? inventoryValue : <span className="text-red-500 text-sm">查無資料</span>}
             </div>
           </div>
         </div>
