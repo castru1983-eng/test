@@ -4,6 +4,7 @@ import { TableData, PageData } from './types.ts';
 import { TableEditor } from './components/TableEditor.tsx';
 
 const STORAGE_KEY = 'table_architect_v5_final';
+const INVENTORY_STORAGE_KEY = 'table_architect_inventory_data';
 
 const generateId = () => {
   try {
@@ -41,6 +42,15 @@ const App: React.FC = () => {
     } else {
       createDefaultPage();
     }
+
+    const savedInventory = localStorage.getItem(INVENTORY_STORAGE_KEY);
+    if (savedInventory) {
+      try {
+        setInventoryData(JSON.parse(savedInventory));
+      } catch (e) {
+        console.error("Failed to load inventory data:", e);
+      }
+    }
   }, []);
 
   const createDefaultPage = () => {
@@ -59,6 +69,12 @@ const App: React.FC = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(pages));
     }
   }, [pages]);
+
+  useEffect(() => {
+    if (inventoryData && Object.keys(inventoryData).length > 0) {
+      localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(inventoryData));
+    }
+  }, [inventoryData]);
 
   const activePage = useMemo(() => 
     pages.find(p => p.id === activePageId) || null, 
