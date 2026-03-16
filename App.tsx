@@ -571,15 +571,14 @@ const App: React.FC = () => {
           <div className="flex items-center gap-2">
             {isEditMode && (
               <>
-                <button onClick={handleInventoryImportClick} className="px-4 py-2.5 rounded-lg font-black border-2 border-green-700 bg-green-100 hover:bg-green-200 text-green-900 transition-all active:translate-y-0.5 text-sm shadow-[4px_4px_0px_0px_rgba(21,128,61,1)]">
-                  <i className="fas fa-file-excel mr-2"></i>匯入 Excel 數量表
-                </button>
-                <div className="h-8 w-[2px] bg-black/10 hidden lg:block mx-1"></div>
-                  <div className="flex bg-black/5 rounded-xl p-1 gap-1 border border-black/10">
-                    <button 
-                      onClick={handleInventoryClick} 
-                      className="bg-white hover:bg-yellow-50 text-black px-4 py-2 rounded-lg font-black text-sm border-2 border-black flex items-center gap-2 transition-all active:translate-y-0.5"
-                    >
+                <div className="flex bg-black/5 rounded-xl p-1 gap-1 border border-black/10">
+                  <button 
+                    onClick={handleInventoryImportClick} 
+                    className="bg-white hover:bg-yellow-50 text-black px-4 py-2 rounded-lg font-black text-sm border-2 border-black flex items-center gap-2 transition-all active:translate-y-0.5"
+                  >
+                    <i className="fas fa-file-excel text-green-600"></i>
+                    更新數量表
+                  </button>
                       <i className="fas fa-file-excel text-green-600"></i>
                       更新庫存表
                     </button>
