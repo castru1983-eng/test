@@ -7,8 +7,9 @@ interface TableEditorProps {
   onUpdate: (updatedTable: TableData) => void;
   onDelete: (id: string) => void;
   onDuplicate: () => void;
+  onToggleInventoryConfirm?: (partNumber: string, location: string) => void;
   isEditMode: boolean;
-  inventoryData?: Record<string, Record<string, number | string>>;
+  inventoryData?: Record<string, Record<string, { quantity: number | string, confirmed: boolean }>>;
   activePageName?: string;
   searchQuery?: string;
   isFirstMatch?: boolean;
@@ -18,9 +19,10 @@ interface TableEditorProps {
 const HighlightedText: React.FC<{ 
   text: string; 
   query: string;
-  inventoryData?: Record<string, Record<string, number | string>>;
+  inventoryData?: Record<string, Record<string, { quantity: number | string, confirmed: boolean }>>;
   activePageName?: string;
-}> = ({ text, query, inventoryData, activePageName }) => {
+  onToggleInventoryConfirm?: (partNumber: string, location: string) => void;
+}> = ({ text, query, inventoryData, activePageName, onToggleInventoryConfirm }) => {
   // 動態建立正則表達式來尋找所有可能的料號 (以防料號間夾雜各種符號)
   const partRegex = useMemo(() => {
     if (!inventoryData) return null;
@@ -77,7 +79,12 @@ const HighlightedText: React.FC<{
 
         if (isPartNumber && matchedKey) {
           return (
-            <InventoryTooltip key={i} inventory={inventoryData[matchedKey]} activePageName={activePageName as string}>
+            <InventoryTooltip 
+              key={i} 
+              inventory={inventoryData[matchedKey]} 
+              activePageName={activePageName as string}
+              onToggleConfirm={() => onToggleInventoryConfirm?.(matchedKey!, activePageName!)}
+            >
               {renderInner()}
             </InventoryTooltip>
           );
@@ -97,10 +104,11 @@ const AutoHeightTextarea: React.FC<{
   textAlign?: 'left' | 'center' | 'right';
   searchQuery?: string;
   readOnly?: boolean;
-  inventoryData?: Record<string, Record<string, number | string>>;
+  inventoryData?: Record<string, Record<string, { quantity: number | string, confirmed: boolean }>>;
   activePageName?: string;
   disableInventory?: boolean;
-}> = ({ value, onChange, className, placeholder, textAlign = 'left', searchQuery = '', readOnly = false, inventoryData, activePageName, disableInventory = false }) => {
+  onToggleInventoryConfirm?: (partNumber: string, location: string) => void;
+}> = ({ value, onChange, className, placeholder, textAlign = 'left', searchQuery = '', readOnly = false, inventoryData, activePageName, disableInventory = false, onToggleInventoryConfirm }) => {
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -140,6 +148,7 @@ const AutoHeightTextarea: React.FC<{
             query={searchQuery || ''} 
             inventoryData={disableInventory ? undefined : inventoryData} 
             activePageName={activePageName} 
+            onToggleInventoryConfirm={onToggleInventoryConfirm}
           />
         ) : (
           <span className="opacity-30">{placeholder}</span>
@@ -164,7 +173,18 @@ const AutoHeightTextarea: React.FC<{
   );
 };
 
-export const TableEditor: React.FC<TableEditorProps> = ({ table, onUpdate, onDelete, onDuplicate, isEditMode, inventoryData = {}, activePageName = '', searchQuery = '', isFirstMatch = false }) => {
+export const TableEditor: React.FC<TableEditorProps> = ({ 
+  table, 
+  onUpdate, 
+  onDelete, 
+  onDuplicate, 
+  onToggleInventoryConfirm,
+  isEditMode, 
+  inventoryData = {}, 
+  activePageName = '', 
+  searchQuery = '', 
+  isFirstMatch = false 
+}) => {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -349,6 +369,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({ table, onUpdate, onDel
                         inventoryData={inventoryData}
                         activePageName={activePageName}
                         disableInventory={isFirstCol || isEditMode}
+                        onToggleInventoryConfirm={onToggleInventoryConfirm}
                       />
                     </td>
                   );

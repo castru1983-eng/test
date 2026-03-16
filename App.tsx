@@ -21,7 +21,7 @@ const App: React.FC = () => {
   const [isEditingPageName, setIsEditingPageName] = useState<string | null>(null);
   const [pageIdToConfirmDelete, setPageIdToConfirmDelete] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(true); 
-  const [inventoryData, setInventoryData] = useState<Record<string, Record<string, number | string>>>({});
+  const [inventoryData, setInventoryData] = useState<Record<string, Record<string, { quantity: number | string, confirmed: boolean }>>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inventoryInputRef = useRef<HTMLInputElement>(null);
 
@@ -75,6 +75,22 @@ const App: React.FC = () => {
       localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(inventoryData));
     }
   }, [inventoryData]);
+
+  const toggleInventoryConfirm = (partNumber: string, location: string) => {
+    setInventoryData(prev => {
+      const updated = { ...prev };
+      if (updated[partNumber] && updated[partNumber][location]) {
+        updated[partNumber] = {
+          ...updated[partNumber],
+          [location]: {
+            ...updated[partNumber][location],
+            confirmed: !updated[partNumber][location].confirmed
+          }
+        };
+      }
+      return updated;
+    });
+  };
 
   const activePage = useMemo(() => 
     pages.find(p => p.id === activePageId) || null, 
@@ -146,7 +162,7 @@ const App: React.FC = () => {
 
     const processJsonData = (jsonData: any[]) => {
       if (jsonData.length === 0) return;
-      const newInventory: Record<string, Record<string, number | string>> = {};
+      const newInventory: Record<string, Record<string, { quantity: number | string, confirmed: boolean }>> = {};
       
       jsonData.forEach(row => {
         // 修剪每個欄位標題的空白，以防 Excel 標題不乾淨
@@ -171,15 +187,19 @@ const App: React.FC = () => {
           if (cleanRow['產品位置'] !== undefined && cleanRow['庫存數量'] !== undefined) {
              const location = String(cleanRow['產品位置']).trim();
              const quantity = cleanRow['庫存數量'];
+             const confirmed = cleanRow['數量確認'] === 'V' || cleanRow['數量確認'] === true || cleanRow['數量確認'] === 'true';
              if (location) {
-               newInventory[partNumber][location] = quantity;
+               newInventory[partNumber][location] = { quantity, confirmed };
              }
           } else {
-            // 舊格式 (交叉表)：第二欄開始至結尾皆視為「廠區名稱」以及「數量」
+            // 交叉表支援格式：若欄位後面帶 (OK) 視為確認，或者從原始資料標記
             for (let i = 1; i < keys.length; i++) {
               const factoryKey = keys[i];
               if (factoryKey !== partNumberKey) {
-                newInventory[partNumber][factoryKey] = cleanRow[factoryKey];
+                newInventory[partNumber][factoryKey] = { 
+                  quantity: cleanRow[factoryKey], 
+                  confirmed: false 
+                };
               }
             }
           }
@@ -597,6 +617,7 @@ const App: React.FC = () => {
                   const newTable = { ...JSON.parse(JSON.stringify(table)), id: generateId(), title: `${table.title} (副本)` };
                   setPages(prev => prev.map(p => p.id === activePageId ? { ...p, tables: [newTable, ...p.tables] } : p));
                 }} 
+                onToggleInventoryConfirm={toggleInventoryConfirm}
                 searchQuery={searchQuery} 
                 isFirstMatch={table.id === firstMatchTableId}
               />
