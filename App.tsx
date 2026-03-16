@@ -77,27 +77,27 @@ const App: React.FC = () => {
   }, [inventoryData]);
 
   const toggleInventoryConfirm = (partNumber: string, location: string) => {
+    if (!partNumber || !location) return;
+    
     setInventoryData(prev => {
-      const updated = { ...prev };
+      // 使用深拷貝確保巢狀物件更新能觸發 React 重新渲染
+      const next = JSON.parse(JSON.stringify(prev));
       
-      // 模糊匹配料號
-      const pnKey = Object.keys(updated).find(k => k.toLowerCase() === partNumber.toLowerCase());
+      // 1. 尋找匹配的料號鍵值 (不分大小寫)
+      const pnKey = Object.keys(next).find(k => k.toLowerCase().trim() === partNumber.toLowerCase().trim());
       if (!pnKey) return prev;
 
-      // 模糊匹配廠區 (location)
-      const locKey = Object.keys(updated[pnKey]).find(
-        l => l.trim().toLowerCase().includes(location.trim().toLowerCase())
-      );
+      // 2. 尋找匹配的廠區鍵值 (模糊匹配：互相包含則認定匹配)
+      const locKey = Object.keys(next[pnKey]).find(l => {
+        const k1 = l.toLowerCase().trim();
+        const k2 = location.toLowerCase().trim();
+        return k1.includes(k2) || k2.includes(k1);
+      });
 
       if (locKey) {
-        updated[pnKey] = {
-          ...updated[pnKey],
-          [locKey]: {
-            ...updated[pnKey][locKey],
-            confirmed: !updated[pnKey][locKey].confirmed
-          }
-        };
-        return updated;
+        // 切換確認狀態
+        next[pnKey][locKey].confirmed = !next[pnKey][locKey].confirmed;
+        return next;
       }
       
       return prev;

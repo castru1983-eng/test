@@ -49,7 +49,7 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
   const handleMouseLeave = () => {
     closeTimeoutRef.current = window.setTimeout(() => {
       setShowTooltip(false);
-    }, 200);
+    }, 300); // 增加延遲到 300ms 更穩定
   };
 
   // 監聽捲軸與視窗縮放，確保 Portal 位置正確
@@ -66,12 +66,12 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
 
   const tooltipElement = showTooltip && (
     <div 
-      className="fixed z-[99999] pointer-events-auto"
+      className="fixed z-[99999] pointer-events-auto select-none"
       style={{
-        top: position === 'top' ? coords.top : coords.top + 30, // 30 is approximate trigger height
+        top: position === 'top' ? coords.top : coords.top + 32,
         left: coords.left + (coords.width / 2),
         transform: `translateX(-50%) ${position === 'top' ? 'translateY(-100%)' : 'translateY(0)'}`,
-        marginTop: position === 'top' ? '-12px' : '12px'
+        marginTop: position === 'top' ? '-16px' : '16px'
       }}
       onMouseEnter={() => {
         if (closeTimeoutRef.current) {
@@ -83,45 +83,59 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
     >
       {/* 隱形透明橋接器 */}
       <div 
-        className={`absolute left-0 right-0 h-8 bg-transparent ${position === 'top' ? 'top-full' : 'bottom-full'}`}
+        className={`absolute left-0 right-0 h-10 bg-transparent ${position === 'top' ? 'top-full' : 'bottom-full'}`}
       ></div>
 
-      <div className="bg-white border-4 border-black p-4 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative min-w-[220px] animate-in fade-in zoom-in duration-150">
+      <div className={`bg-white border-4 p-4 rounded-3xl shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] relative min-w-[240px] animate-in fade-in zoom-in duration-200 
+        ${isConfirmed ? 'border-green-600' : 'border-black'}`}
+      >
+        {/* 已確認標籤 */}
+        {isConfirmed && (
+          <div className="absolute -top-4 -right-4 bg-green-600 text-white text-[10px] font-black px-3 py-1 rounded-full border-2 border-black rotate-12 shadow-md z-10">
+            ✓ 已核對
+          </div>
+        )}
+
         {/* Tooltip 箭頭 */}
-        <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-white transform rotate-45 border-black
+        <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-white transform rotate-45 
+          ${isConfirmed ? 'border-green-600' : 'border-black'}
           ${position === 'top' ? '-bottom-2.5 border-b-4 border-r-4' : '-top-2.5 border-t-4 border-l-4'}`}>
         </div>
         
-        <h4 className="font-black text-[10px] uppercase mb-1 text-gray-400 tracking-wider flex items-center gap-1">
-           📍 {activePageName} 廠區庫存
-        </h4>
+        <div className="flex items-center justify-between mb-1">
+          <h4 className="font-black text-[10px] uppercase text-gray-400 tracking-wider flex items-center gap-1">
+             📍 {activePageName} 廠區庫存
+          </h4>
+        </div>
         
-        <div className={`text-5xl font-black italic tracking-tighter mb-5 drop-shadow-[2px_2px_0px_white] ${isConfirmed ? 'text-green-600' : 'text-blue-600'}`}>
-           {inventoryValue !== undefined ? inventoryValue : <span className="text-red-500 text-sm font-normal not-italic">查無資料</span>}
+        <div className={`text-6xl font-black italic tracking-tighter mb-6 drop-shadow-[3px_3px_0px_white] ${isConfirmed ? 'text-green-600' : 'text-blue-600'}`}>
+           {inventoryValue !== undefined ? inventoryValue : <span className="text-red-500 text-base font-normal not-italic">查無資料</span>}
         </div>
 
         <div 
-          className={`group/btn flex items-center gap-3 p-4 rounded-xl border-4 transition-all cursor-pointer select-none active:scale-95 shadow-sm
+          role="button"
+          tabIndex={0}
+          className={`flex items-center gap-3 p-4 rounded-2xl border-4 transition-all cursor-pointer select-none active:scale-90
             ${isConfirmed 
-              ? 'bg-green-100 border-green-600 text-green-800 hover:bg-green-200' 
-              : 'bg-white border-black text-black hover:bg-yellow-50 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+              ? 'bg-green-600 border-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' 
+              : 'bg-white border-black text-black hover:bg-yellow-100 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'
             }`}
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             onToggleConfirm?.();
           }}
         >
-          <div className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-all 
-            ${isConfirmed 
-              ? 'bg-green-600 border-green-600 text-white shadow-inner' 
-              : 'bg-white border-black group-hover/btn:border-green-600'
-            }`}
-          >
-            {isConfirmed && <i className="fas fa-check text-lg"></i>}
+          <div className={`w-10 h-10 rounded-xl border-4 flex items-center justify-center transition-all bg-white
+            ${isConfirmed ? 'border-black text-green-600' : 'border-black text-transparent group-hover:border-green-600'}
+          `}>
+            <i className={`fas ${isConfirmed ? 'fa-check-double' : 'fa-check'} text-xl`}></i>
           </div>
-          <div className="flex flex-col">
-            <span className="font-black text-sm uppercase leading-tight">數量核對正確</span>
-            <span className="text-[9px] font-bold opacity-60">點擊切換狀態</span>
+          <div className="flex flex-col items-start">
+            <span className="font-black text-lg uppercase leading-none">{isConfirmed ? '核對正確' : '數量確認'}</span>
+            <span className={`text-[10px] font-bold ${isConfirmed ? 'text-green-100' : 'text-gray-400'}`}>
+              {isConfirmed ? '點擊取消標記' : '點擊標記正確'}
+            </span>
           </div>
         </div>
       </div>
@@ -131,13 +145,13 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
   return (
     <span 
       ref={triggerRef}
-      className={`relative inline-block cursor-help transition-all ${isConfirmed ? 'bg-green-50/50 rounded-sm px-0.5' : ''}`}
+      className={`relative inline-block cursor-help transition-all duration-300 ${isConfirmed ? 'bg-green-50 rounded-md px-1' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <span className={`border-b-2 border-dashed hover:bg-yellow-200 transition-colors ${isConfirmed ? 'border-green-600 font-bold text-green-700' : 'border-black'}`}>
+      <span className={`border-b-4 border-dashed transition-all ${isConfirmed ? 'border-green-600 font-black text-green-700' : 'border-black'}`}>
         {children}
-        {isConfirmed && <i className="fas fa-check-circle text-green-600 ml-1 text-[10px]"></i>}
+        {isConfirmed && <i className="fas fa-check-circle text-green-600 ml-1 text-xs"></i>}
       </span>
       {createPortal(tooltipElement, document.body)}
     </span>
