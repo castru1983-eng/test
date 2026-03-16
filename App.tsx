@@ -579,10 +579,7 @@ const App: React.FC = () => {
                     <i className="fas fa-file-excel text-green-600"></i>
                     更新數量表
                   </button>
-                      <i className="fas fa-file-excel text-green-600"></i>
-                      更新庫存表
-                    </button>
-                    {inventoryData && Object.keys(inventoryData).length > 0 && (
+                  {inventoryData && Object.keys(inventoryData).length > 0 && (
                       <button 
                         onClick={exportInventory} 
                         title="匯出含核對紀錄的庫存表"
