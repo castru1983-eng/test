@@ -249,20 +249,32 @@ const App: React.FC = () => {
         const newInventory: Record<string, Record<string, { quantity: number | string, confirmed: boolean, name?: string, category?: string }>> = JSON.parse(JSON.stringify(prev)); 
         
         // 建立一個從現有表格抓取的 metadata map 作為輔助
+        const normalizeKey = (k: string) => (k || '').toString().trim().toUpperCase();
         const tableMetadata: Record<string, { name: string, category: string }> = {};
         pages.forEach(page => {
           page.tables.forEach(table => {
-            const pnIdx = table.columns.findIndex(c => (c || '').trim().includes('料號'));
-            const nameIdx = table.columns.findIndex(c => (c || '').trim() === '品名' || (c || '').trim() === '產品名稱');
-            const catIdx = table.columns.findIndex(c => (c || '').trim() === '產品類別' || (c || '').trim() === '類別');
+            const findColIdx = (targets: string[]) => table.columns.findIndex(c => {
+              const cleanCol = (c || '').toString().replace(/\s/g, '').toLowerCase();
+              return targets.some(t => cleanCol.includes(t.toLowerCase()));
+            });
+
+            const pnIdx = findColIdx(['料號', 'partno', 'pn']);
+            const nameIdx = findColIdx(['品名', '產品名稱', 'itemname', 'description']);
+            const catIdx = findColIdx(['產品類別', '類別', 'category', 'type']);
+
             if (pnIdx !== -1) {
               table.rows.forEach(row => {
-                const pn = (row[pnIdx] || '').toString().trim();
-                if (pn) {
-                  if (!tableMetadata[pn]) tableMetadata[pn] = { name: '', category: '' };
-                  if (nameIdx !== -1 && row[nameIdx]) tableMetadata[pn].name = row[nameIdx].toString().trim();
-                  if (catIdx !== -1 && row[catIdx]) tableMetadata[pn].category = row[catIdx].toString().trim();
-                }
+                const rawPn = (row[pnIdx] || '').toString();
+                if (!rawPn) return;
+                const pns = rawPn.split(/[\s,\n]+/).map(p => p.trim()).filter(p => p.length > 0);
+                pns.forEach(pn => {
+                  const normPn = normalizeKey(pn);
+                  if (!tableMetadata[normPn]) tableMetadata[normPn] = { name: '', category: '' };
+                  if (nameIdx !== -1 && row[nameIdx] && !tableMetadata[normPn].name) 
+                    tableMetadata[normPn].name = row[nameIdx].toString().trim();
+                  if (catIdx !== -1 && row[catIdx] && !tableMetadata[normPn].category) 
+                    tableMetadata[normPn].category = row[catIdx].toString().trim();
+                });
               });
             }
           });
@@ -284,12 +296,13 @@ const App: React.FC = () => {
             if (!partNumber) return;
 
             // 優先序：Excel 內容 > 表格內容 > 舊有庫存內容
+            const normPartNumber = normalizeKey(partNumber);
             const productName = (productNameKey ? String(cleanRow[productNameKey]).trim() : '') 
-                              || tableMetadata[partNumber]?.name 
+                              || tableMetadata[normPartNumber]?.name 
                               || (newInventory[partNumber] ? Object.values(newInventory[partNumber])[0]?.name : '');
             
             const category = (categoryKey ? String(cleanRow[categoryKey]).trim() : '') 
-                           || tableMetadata[partNumber]?.category 
+                           || tableMetadata[normPartNumber]?.category 
                            || (newInventory[partNumber] ? Object.values(newInventory[partNumber])[0]?.category : '');
             
             if (!newInventory[partNumber]) {
@@ -586,45 +599,56 @@ const App: React.FC = () => {
 
   const exportInventory = () => {
     if (!inventoryData || Object.keys(inventoryData).length === 0) return;
-    
     const escapeCSV = (str: string) => `"${(str || '').toString().replace(/"/g, '""')}"`;
-    
-    // 找出所有出現過的廠區名稱 (location)
-    const allLocations = new Set<string>();
-    Object.values(inventoryData).forEach(locMap => {
-      Object.keys(locMap).forEach(loc => allLocations.add(loc));
-    });
-    const locations = Array.from(allLocations).sort();
+    const normalizeKey = (key: string) => (key || '').toString().trim().toUpperCase();
 
     // 建立一個從現有表格抓取的 metadata map 作為輔助，補足匯出時可能缺失的品名資訊
     const tableMetadata: Record<string, { name: string, category: string }> = {};
     pages.forEach(page => {
       page.tables.forEach(table => {
-        const pnIdx = table.columns.findIndex(c => (c || '').trim().includes('料號'));
-        const nameIdx = table.columns.findIndex(c => (c || '').trim() === '品名' || (c || '').trim() === '產品名稱');
-        const catIdx = table.columns.findIndex(c => (c || '').trim() === '產品類別' || (c || '').trim() === '類別');
+        // 寬鬆比對欄位名稱
+        const findColIdx = (targets: string[]) => table.columns.findIndex(c => {
+          const cleanCol = (c || '').toString().replace(/\s/g, '').toLowerCase();
+          return targets.some(t => cleanCol.includes(t.toLowerCase()));
+        });
+
+        const pnIdx = findColIdx(['料號', 'partno', 'pn']);
+        const nameIdx = findColIdx(['品名', '產品名稱', 'itemname', 'description']);
+        const catIdx = findColIdx(['產品類別', '類別', 'category', 'type']);
+
         if (pnIdx !== -1) {
           table.rows.forEach(row => {
-            const pn = (row[pnIdx] || '').toString().trim();
-            if (pn) {
-              if (!tableMetadata[pn]) tableMetadata[pn] = { name: '', category: '' };
-              if (nameIdx !== -1 && row[nameIdx] && !tableMetadata[pn].name) tableMetadata[pn].name = row[nameIdx].toString().trim();
-              if (catIdx !== -1 && row[catIdx] && !tableMetadata[pn].category) tableMetadata[pn].category = row[catIdx].toString().trim();
-            }
+            const rawPn = (row[pnIdx] || '').toString();
+            if (!rawPn) return;
+            
+            // 處理一格多料號的狀況 (以空白、逗號或換行分隔)
+            const pns = rawPn.split(/[\s,\n]+/).map(p => p.trim()).filter(p => p.length > 0);
+            
+            pns.forEach(pn => {
+              const normPn = normalizeKey(pn);
+              if (!tableMetadata[normPn]) tableMetadata[normPn] = { name: '', category: '' };
+              if (nameIdx !== -1 && row[nameIdx] && !tableMetadata[normPn].name) 
+                tableMetadata[normPn].name = row[nameIdx].toString().trim();
+              if (catIdx !== -1 && row[catIdx] && !tableMetadata[normPn].category) 
+                tableMetadata[normPn].category = row[catIdx].toString().trim();
+            });
           });
         }
       });
     });
+
+    console.log('Scraped Table Metadata Map:', tableMetadata);
 
     // 建立 CSV 標題：品名, 產品類別, 料號, 產品位置, 庫存數量, 數量確認
     const headers = ['品名', '產品類別', '料號', '產品位置', '庫存數量', '數量確認'];
     const rows: string[][] = [];
 
     Object.entries(inventoryData).forEach(([partNumber, locMap]) => {
+      const normPN = normalizeKey(partNumber);
       Object.entries(locMap).forEach(([location, data]) => {
         rows.push([
-          data.name || tableMetadata[partNumber]?.name || '',
-          data.category || tableMetadata[partNumber]?.category || '',
+          data.name || tableMetadata[normPN]?.name || '',
+          data.category || tableMetadata[normPN]?.category || '',
           partNumber,
           location,
           data.quantity.toString(),
