@@ -243,60 +243,85 @@ const App: React.FC = () => {
 
     const processJsonData = (jsonData: any[]) => {
       if (jsonData.length === 0) return;
-      const newInventory: Record<string, Record<string, { quantity: number | string, confirmed: boolean, name?: string, category?: string }>> = {};
       
-      jsonData.forEach(row => {
-        // 修剪每個欄位標題的空白，以防 Excel 標題不乾淨
-        const cleanRow: Record<string, any> = {};
-        for (const k in row) {
-          cleanRow[k.trim()] = row[k];
-        }
+      setInventoryData(prev => {
+        // 明確定義新物件的型別，避免 TS lint 報錯
+        const newInventory: Record<string, Record<string, { quantity: number | string, confirmed: boolean, name?: string, category?: string }>> = JSON.parse(JSON.stringify(prev)); 
+        
+        // 建立一個從現有表格抓取的 metadata map 作為輔助
+        const tableMetadata: Record<string, { name: string, category: string }> = {};
+        pages.forEach(page => {
+          page.tables.forEach(table => {
+            const pnIdx = table.columns.findIndex(c => (c || '').trim().includes('料號'));
+            const nameIdx = table.columns.findIndex(c => (c || '').trim() === '品名' || (c || '').trim() === '產品名稱');
+            const catIdx = table.columns.findIndex(c => (c || '').trim() === '產品類別' || (c || '').trim() === '類別');
+            if (pnIdx !== -1) {
+              table.rows.forEach(row => {
+                const pn = (row[pnIdx] || '').toString().trim();
+                if (pn) {
+                  if (!tableMetadata[pn]) tableMetadata[pn] = { name: '', category: '' };
+                  if (nameIdx !== -1 && row[nameIdx]) tableMetadata[pn].name = row[nameIdx].toString().trim();
+                  if (catIdx !== -1 && row[catIdx]) tableMetadata[pn].category = row[catIdx].toString().trim();
+                }
+              });
+            }
+          });
+        });
 
-        const keys = Object.keys(cleanRow);
-        if (keys.length > 0) {
-          // 嘗試找出料號、品名、類別欄位
-          const partNumberKey = cleanRow['料號'] !== undefined ? '料號' : keys[0];
-          const productNameKey = keys.find(k => k === '品名' || k === '產品名稱');
-          const categoryKey = keys.find(k => k === '產品類別' || k === '類別');
-          
-          const partNumber = String(cleanRow[partNumberKey]).trim();
-          const productName = productNameKey ? String(cleanRow[productNameKey]).trim() : '';
-          const category = categoryKey ? String(cleanRow[categoryKey]).trim() : '';
-          
-          if (!partNumber) return;
-          
-          if (!newInventory[partNumber]) {
-            newInventory[partNumber] = {};
+        jsonData.forEach(row => {
+          const cleanRow: Record<string, any> = {};
+          for (const k in row) {
+            cleanRow[k.trim()] = row[k];
           }
 
-          // 如果同時存在「產品位置」與「庫存數量」，則視為新格式 (行式)
-          if (cleanRow['產品位置'] !== undefined && cleanRow['庫存數量'] !== undefined) {
-             const location = String(cleanRow['產品位置']).trim();
-             const quantity = cleanRow['庫存數量'];
-             const confirmed = cleanRow['數量確認'] === 'V' || cleanRow['數量確認'] === true || cleanRow['數量確認'] === 'true';
-             if (location) {
-               newInventory[partNumber][location] = { quantity, confirmed, name: productName, category };
-             }
-          } else {
-            // 交叉表支援格式
-            for (let i = 1; i < keys.length; i++) {
-              const factoryKey = keys[i];
-              // 排除掉已經是元資料的欄位
-              if (factoryKey !== partNumberKey && factoryKey !== productNameKey && factoryKey !== categoryKey && factoryKey !== '數量確認') {
-                newInventory[partNumber][factoryKey] = { 
-                  quantity: cleanRow[factoryKey], 
-                  confirmed: false,
-                  name: productName,
-                  category
-                };
+          const keys = Object.keys(cleanRow);
+          if (keys.length > 0) {
+            const partNumberKey = cleanRow['料號'] !== undefined ? '料號' : keys[0];
+            const productNameKey = keys.find(k => k === '品名' || k === '產品名稱');
+            const categoryKey = keys.find(k => k === '產品類別' || k === '類別');
+            
+            const partNumber = String(cleanRow[partNumberKey]).trim();
+            if (!partNumber) return;
+
+            // 優先序：Excel 內容 > 表格內容 > 舊有庫存內容
+            const productName = (productNameKey ? String(cleanRow[productNameKey]).trim() : '') 
+                              || tableMetadata[partNumber]?.name 
+                              || (newInventory[partNumber] ? Object.values(newInventory[partNumber])[0]?.name : '');
+            
+            const category = (categoryKey ? String(cleanRow[categoryKey]).trim() : '') 
+                           || tableMetadata[partNumber]?.category 
+                           || (newInventory[partNumber] ? Object.values(newInventory[partNumber])[0]?.category : '');
+            
+            if (!newInventory[partNumber]) {
+              newInventory[partNumber] = {};
+            }
+
+            if (cleanRow['產品位置'] !== undefined && cleanRow['庫存數量'] !== undefined) {
+               const location = String(cleanRow['產品位置']).trim();
+               const quantity = cleanRow['庫存數量'];
+               const confirmed = cleanRow['數量確認'] === 'V' || cleanRow['數量確認'] === true || cleanRow['數量確認'] === 'true';
+               if (location) {
+                 newInventory[partNumber][location] = { quantity, confirmed, name: productName, category };
+               }
+            } else {
+              // 交叉表支援格式
+              for (let i = 1; i < keys.length; i++) {
+                const factoryKey = keys[i];
+                if (factoryKey !== partNumberKey && factoryKey !== productNameKey && factoryKey !== categoryKey && factoryKey !== '數量確認') {
+                  newInventory[partNumber][factoryKey] = { 
+                    quantity: cleanRow[factoryKey], 
+                    confirmed: false,
+                    name: productName,
+                    category
+                  };
+                }
               }
             }
           }
-        }
+        });
+        
+        return newInventory;
       });
-      
-      console.log('Parsed Inventory with Metadata:', newInventory);
-      setInventoryData(newInventory);
     };
 
     const isCsv = file.name.toLowerCase().endsWith('.csv');
@@ -571,6 +596,26 @@ const App: React.FC = () => {
     });
     const locations = Array.from(allLocations).sort();
 
+    // 建立一個從現有表格抓取的 metadata map 作為輔助，補足匯出時可能缺失的品名資訊
+    const tableMetadata: Record<string, { name: string, category: string }> = {};
+    pages.forEach(page => {
+      page.tables.forEach(table => {
+        const pnIdx = table.columns.findIndex(c => (c || '').trim().includes('料號'));
+        const nameIdx = table.columns.findIndex(c => (c || '').trim() === '品名' || (c || '').trim() === '產品名稱');
+        const catIdx = table.columns.findIndex(c => (c || '').trim() === '產品類別' || (c || '').trim() === '類別');
+        if (pnIdx !== -1) {
+          table.rows.forEach(row => {
+            const pn = (row[pnIdx] || '').toString().trim();
+            if (pn) {
+              if (!tableMetadata[pn]) tableMetadata[pn] = { name: '', category: '' };
+              if (nameIdx !== -1 && row[nameIdx] && !tableMetadata[pn].name) tableMetadata[pn].name = row[nameIdx].toString().trim();
+              if (catIdx !== -1 && row[catIdx] && !tableMetadata[pn].category) tableMetadata[pn].category = row[catIdx].toString().trim();
+            }
+          });
+        }
+      });
+    });
+
     // 建立 CSV 標題：品名, 產品類別, 料號, 產品位置, 庫存數量, 數量確認
     const headers = ['品名', '產品類別', '料號', '產品位置', '庫存數量', '數量確認'];
     const rows: string[][] = [];
@@ -578,8 +623,8 @@ const App: React.FC = () => {
     Object.entries(inventoryData).forEach(([partNumber, locMap]) => {
       Object.entries(locMap).forEach(([location, data]) => {
         rows.push([
-          data.name || '',
-          data.category || '',
+          data.name || tableMetadata[partNumber]?.name || '',
+          data.category || tableMetadata[partNumber]?.category || '',
           partNumber,
           location,
           data.quantity.toString(),
