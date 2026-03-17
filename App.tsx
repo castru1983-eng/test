@@ -21,7 +21,7 @@ const App: React.FC = () => {
   const [isEditingPageName, setIsEditingPageName] = useState<string | null>(null);
   const [pageIdToConfirmDelete, setPageIdToConfirmDelete] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(true); 
-  const [inventoryData, setInventoryData] = useState<Record<string, Record<string, { quantity: number | string, confirmed: boolean }>>>({});
+  const [inventoryData, setInventoryData] = useState<Record<string, Record<string, { quantity: number | string, confirmed: boolean, name?: string, category?: string }>>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inventoryInputRef = useRef<HTMLInputElement>(null);
 
@@ -243,7 +243,7 @@ const App: React.FC = () => {
 
     const processJsonData = (jsonData: any[]) => {
       if (jsonData.length === 0) return;
-      const newInventory: Record<string, Record<string, { quantity: number | string, confirmed: boolean }>> = {};
+      const newInventory: Record<string, Record<string, { quantity: number | string, confirmed: boolean, name?: string, category?: string }>> = {};
       
       jsonData.forEach(row => {
         // 修剪每個欄位標題的空白，以防 Excel 標題不乾淨
@@ -254,9 +254,14 @@ const App: React.FC = () => {
 
         const keys = Object.keys(cleanRow);
         if (keys.length > 0) {
-          // 嘗試找出料號欄位，優先找名為「料號」的，沒有的話回退到第一個欄位
+          // 嘗試找出料號、品名、類別欄位
           const partNumberKey = cleanRow['料號'] !== undefined ? '料號' : keys[0];
+          const productNameKey = keys.find(k => k === '品名' || k === '產品名稱');
+          const categoryKey = keys.find(k => k === '產品類別' || k === '類別');
+          
           const partNumber = String(cleanRow[partNumberKey]).trim();
+          const productName = productNameKey ? String(cleanRow[productNameKey]).trim() : '';
+          const category = categoryKey ? String(cleanRow[categoryKey]).trim() : '';
           
           if (!partNumber) return;
           
@@ -270,16 +275,19 @@ const App: React.FC = () => {
              const quantity = cleanRow['庫存數量'];
              const confirmed = cleanRow['數量確認'] === 'V' || cleanRow['數量確認'] === true || cleanRow['數量確認'] === 'true';
              if (location) {
-               newInventory[partNumber][location] = { quantity, confirmed };
+               newInventory[partNumber][location] = { quantity, confirmed, name: productName, category };
              }
           } else {
-            // 交叉表支援格式：若欄位後面帶 (OK) 視為確認，或者從原始資料標記
+            // 交叉表支援格式
             for (let i = 1; i < keys.length; i++) {
               const factoryKey = keys[i];
-              if (factoryKey !== partNumberKey) {
+              // 排除掉已經是元資料的欄位
+              if (factoryKey !== partNumberKey && factoryKey !== productNameKey && factoryKey !== categoryKey && factoryKey !== '數量確認') {
                 newInventory[partNumber][factoryKey] = { 
                   quantity: cleanRow[factoryKey], 
-                  confirmed: false 
+                  confirmed: false,
+                  name: productName,
+                  category
                 };
               }
             }
@@ -287,7 +295,7 @@ const App: React.FC = () => {
         }
       });
       
-      console.log('Parsed Inventory:', newInventory);
+      console.log('Parsed Inventory with Metadata:', newInventory);
       setInventoryData(newInventory);
     };
 
@@ -563,13 +571,15 @@ const App: React.FC = () => {
     });
     const locations = Array.from(allLocations).sort();
 
-    // 建立 CSV 標題：料號, 產品位置, 庫存數量, 數量確認
-    const headers = ['料號', '產品位置', '庫存數量', '數量確認'];
+    // 建立 CSV 標題：品名, 產品類別, 料號, 產品位置, 庫存數量, 數量確認
+    const headers = ['品名', '產品類別', '料號', '產品位置', '庫存數量', '數量確認'];
     const rows: string[][] = [];
 
     Object.entries(inventoryData).forEach(([partNumber, locMap]) => {
       Object.entries(locMap).forEach(([location, data]) => {
         rows.push([
+          data.name || '',
+          data.category || '',
           partNumber,
           location,
           data.quantity.toString(),

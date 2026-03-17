@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 interface InventoryTooltipProps {
-  inventory: Record<string, { quantity: number | string, confirmed: boolean }>;
+  inventory: Record<string, { quantity: number | string, confirmed: boolean, name?: string, category?: string }>;
   activePageName: string;
   children: React.ReactNode;
   onToggleConfirm?: () => void;
@@ -23,6 +23,8 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
   const inventoryData = targetInventoryKey ? inventory[targetInventoryKey] : undefined;
   const inventoryValue = inventoryData?.quantity;
   const isConfirmed = inventoryData?.confirmed || false;
+  const productName = inventoryData?.name || '';
+  const category = inventoryData?.category || '';
 
   const updatePosition = () => {
     if (triggerRef.current) {
@@ -86,7 +88,7 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
         className={`absolute left-0 right-0 h-10 bg-transparent ${position === 'top' ? 'top-full' : 'bottom-full'}`}
       ></div>
 
-      <div className={`bg-white border-4 p-4 rounded-3xl shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] relative min-w-[240px] animate-in fade-in zoom-in duration-200 
+      <div className={`bg-white border-4 p-5 rounded-3xl shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] relative min-w-[280px] max-w-[320px] animate-in fade-in zoom-in duration-200 
         ${isConfirmed ? 'border-green-600' : 'border-black'}`}
       >
         {/* 已確認標籤 */}
@@ -102,10 +104,26 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
           ${position === 'top' ? '-bottom-2.5 border-b-4 border-r-4' : '-top-2.5 border-t-4 border-l-4'}`}>
         </div>
         
-        <div className="flex items-center justify-between mb-1">
-          <h4 className="font-black text-[10px] uppercase text-gray-400 tracking-wider flex items-center gap-1">
-             📍 {activePageName} 廠區庫存
-          </h4>
+        <div className="flex flex-col gap-1.5 mb-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-black text-[10px] uppercase text-gray-400 tracking-wider flex items-center gap-1">
+               📍 {activePageName} 廠區庫存
+            </h4>
+            {category && (
+              <span className="bg-black text-white text-[9px] font-black px-2 py-0.5 rounded uppercase">
+                {category}
+              </span>
+            )}
+          </div>
+          
+          {productName && (
+            <div className="flex items-start gap-1.5 mt-1 border-l-4 border-yellow-400 pl-3">
+              <i className="fas fa-box text-gray-400 mt-1 text-xs"></i>
+              <span className="text-sm font-black text-black leading-tight">
+                {productName}
+              </span>
+            </div>
+          )}
         </div>
         
         <div className={`text-6xl font-black italic tracking-tighter mb-6 drop-shadow-[3px_3px_0px_white] ${isConfirmed ? 'text-green-600' : 'text-blue-600'}`}>

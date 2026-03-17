@@ -9,7 +9,7 @@ interface TableEditorProps {
   onDuplicate: () => void;
   onToggleInventoryConfirm?: (partNumber: string, location: string) => void;
   isEditMode: boolean;
-  inventoryData?: Record<string, Record<string, { quantity: number | string, confirmed: boolean }>>;
+  inventoryData?: Record<string, Record<string, { quantity: number | string, confirmed: boolean, name?: string, category?: string }>>;
   activePageName?: string;
   searchQuery?: string;
   isFirstMatch?: boolean;
@@ -19,7 +19,7 @@ interface TableEditorProps {
 const HighlightedText: React.FC<{ 
   text: string; 
   query: string;
-  inventoryData?: Record<string, Record<string, { quantity: number | string, confirmed: boolean }>>;
+  inventoryData?: Record<string, Record<string, { quantity: number | string, confirmed: boolean, name?: string, category?: string }>>;
   activePageName?: string;
   onToggleInventoryConfirm?: (partNumber: string, location: string) => void;
 }> = ({ text, query, inventoryData, activePageName, onToggleInventoryConfirm }) => {
