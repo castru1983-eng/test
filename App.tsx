@@ -333,6 +333,8 @@ const App: React.FC = () => {
           const rawPN = String(cleanRow[partNumberKey || ''] || '').trim();
           if (!rawPN) return;
 
+          if (!newInventory[rawPN]) newInventory[rawPN] = {};
+
           const normPN = normalizeKey(rawPN);
           // 彙整 metadata (優先序：Excel > 當前表格 > 舊庫存)
           const productName = (productNameKey ? String(cleanRow[productNameKey]).trim() : '') 
