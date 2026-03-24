@@ -17,7 +17,7 @@ export interface InventoryItem {
   confirmed: boolean;
   name?: string;
   category?: string;
-  remarks?: string;
+  newQuantity?: string;
 }
 
 export type InventoryData = Record<string, Record<string, InventoryItem>>;

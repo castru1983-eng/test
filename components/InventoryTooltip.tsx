@@ -6,10 +6,10 @@ interface InventoryTooltipProps {
   activePageName: string;
   children: React.ReactNode;
   onToggleConfirm?: () => void;
-  onRemarksChange?: (remarks: string) => void;
+  onNewQuantityChange?: (newQuantity: string) => void;
 }
 
-export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, activePageName, children, onToggleConfirm, onRemarksChange }) => {
+export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, activePageName, children, onToggleConfirm, onNewQuantityChange }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [position, setPosition] = useState<'top' | 'bottom'>('top');
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
@@ -26,7 +26,7 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
   const isConfirmed = inventoryData?.confirmed || false;
   const productName = inventoryData?.name || '';
   const category = inventoryData?.category || '';
-  const remarks = inventoryData?.remarks || '';
+  const newQuantityValue = inventoryData?.newQuantity || '';
 
   const updatePosition = () => {
     if (triggerRef.current) {
@@ -140,11 +140,11 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
             <i className="fas fa-pen-to-square absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
             <input 
               type="text" 
-              value={remarks}
-              onChange={(e) => onRemarksChange?.(e.target.value)}
+              value={newQuantityValue}
+              onChange={(e) => onNewQuantityChange?.(e.target.value)}
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
-              placeholder="輸入新數量或備註..."
+              placeholder="輸入新數量..."
               className="w-full bg-gray-50 border-2 border-black rounded-xl py-2.5 pl-9 pr-4 text-xs font-bold focus:outline-none focus:bg-yellow-50 focus:ring-2 focus:ring-yellow-400 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
             />
           </div>

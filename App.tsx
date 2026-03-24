@@ -78,7 +78,7 @@ const App: React.FC = () => {
     }
   }, [inventoryData]);
 
-  const updateInventoryRemarks = (partNumber: string, location: string, remarks: string) => {
+  const updateInventoryNewQuantity = (partNumber: string, location: string, newQuantity: string) => {
     if (!partNumber || !location) return;
     
     setInventoryData(prev => {
@@ -93,7 +93,7 @@ const App: React.FC = () => {
       });
 
       if (locKey) {
-        next[pnKey][locKey].remarks = remarks;
+        next[pnKey][locKey].newQuantity = newQuantity;
         return next;
       }
       return prev;
@@ -301,10 +301,10 @@ const App: React.FC = () => {
       setInventoryData(prev => {
         const newInventory: InventoryData = JSON.parse(JSON.stringify(prev)); 
         
-        // 匯入新表時，先清空所有舊的備註內容 (盤點備註)
+        // 匯入新表時，先清空所有舊的新數量內容 (盤點紀錄)
         Object.keys(newInventory).forEach(pn => {
           Object.keys(newInventory[pn]).forEach(loc => {
-            newInventory[pn][loc].remarks = '';
+            newInventory[pn][loc].newQuantity = '';
           });
         });
         
@@ -375,7 +375,7 @@ const App: React.FC = () => {
                          || tableMetadata[normPN]?.category 
                          || (newInventory[rawPN] ? Object.values(newInventory[rawPN])[0]?.category : '');
           
-          const remarks = remarksKey ? String(cleanRow[remarksKey] || '').trim() : '';
+          const importedNewQuantity = remarksKey ? String(cleanRow[remarksKey] || '').trim() : '';
 
           const hasStandardLocation = locationKey && cleanRow[locationKey];
           if (hasStandardLocation) {
@@ -383,7 +383,7 @@ const App: React.FC = () => {
             const location = String(cleanRow[locationKey]).trim();
             const quantity = quantityKey ? cleanRow[quantityKey] : '';
             const confirmed = confirmKey ? (['V', 'OK', 'TRUE'].includes(String(cleanRow[confirmKey]).toUpperCase().trim())) : false;
-            newInventory[rawPN][location] = { quantity, confirmed, name: productName, category, remarks: remarks };
+            newInventory[rawPN][location] = { quantity, confirmed, name: productName, category, newQuantity: importedNewQuantity };
           } else {
             // 交叉表格式：料號, 廠區A, 廠區B...
             originalKeys.forEach(origKey => {
@@ -397,7 +397,7 @@ const App: React.FC = () => {
                     confirmed: false,
                     name: productName,
                     category,
-                    remarks: remarks
+                    newQuantity: importedNewQuantity
                   };
                 }
               }
@@ -720,7 +720,7 @@ const App: React.FC = () => {
           location,
           data.quantity.toString(),
           data.confirmed ? 'V' : '',
-          data.remarks || ''
+          data.newQuantity || ''
         ]);
       });
     });
@@ -900,7 +900,7 @@ const App: React.FC = () => {
                   setPages(prev => prev.map(p => p.id === activePageId ? { ...p, tables: [newTable, ...p.tables] } : p));
                 }} 
                 onToggleInventoryConfirm={toggleInventoryConfirm}
-                onUpdateInventoryRemarks={updateInventoryRemarks}
+                onUpdateInventoryNewQuantity={updateInventoryNewQuantity}
                 searchQuery={searchQuery} 
                 isFirstMatch={table.id === firstMatchTableId}
               />

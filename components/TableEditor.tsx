@@ -8,7 +8,7 @@ interface TableEditorProps {
   onDelete: (id: string) => void;
   onDuplicate: () => void;
   onToggleInventoryConfirm?: (partNumber: string, location: string) => void;
-  onUpdateInventoryRemarks?: (partNumber: string, location: string, remarks: string) => void;
+  onUpdateInventoryNewQuantity?: (partNumber: string, location: string, newQuantity: string) => void;
   isEditMode: boolean;
   inventoryData?: InventoryData;
   activePageName?: string;
@@ -23,8 +23,8 @@ const HighlightedText: React.FC<{
   inventoryData?: InventoryData;
   activePageName?: string;
   onToggleInventoryConfirm?: (partNumber: string, location: string) => void;
-  onUpdateInventoryRemarks?: (partNumber: string, location: string, remarks: string) => void;
-}> = ({ text, query, inventoryData, activePageName, onToggleInventoryConfirm, onUpdateInventoryRemarks }) => {
+  onUpdateInventoryNewQuantity?: (partNumber: string, location: string, newQuantity: string) => void;
+}> = ({ text, query, inventoryData, activePageName, onToggleInventoryConfirm, onUpdateInventoryNewQuantity }) => {
   // 動態建立正則表達式來尋找所有可能的料號 (以防料號間夾雜各種符號)
   const partRegex = useMemo(() => {
     if (!inventoryData) return null;
@@ -86,7 +86,7 @@ const HighlightedText: React.FC<{
               inventory={inventoryData[matchedKey]} 
               activePageName={activePageName as string}
               onToggleConfirm={() => onToggleInventoryConfirm?.(matchedKey!, activePageName!)}
-              onRemarksChange={(remarks) => onUpdateInventoryRemarks?.(matchedKey!, activePageName!, remarks)}
+              onNewQuantityChange={(val) => onUpdateInventoryNewQuantity?.(matchedKey!, activePageName!, val)}
             >
               {renderInner()}
             </InventoryTooltip>
@@ -111,8 +111,8 @@ const AutoHeightTextarea: React.FC<{
   activePageName?: string;
   disableInventory?: boolean;
   onToggleInventoryConfirm?: (partNumber: string, location: string) => void;
-  onUpdateInventoryRemarks?: (partNumber: string, location: string, remarks: string) => void;
-}> = ({ value, onChange, className, placeholder, textAlign = 'left', searchQuery = '', readOnly = false, inventoryData, activePageName, disableInventory = false, onToggleInventoryConfirm, onUpdateInventoryRemarks }) => {
+  onUpdateInventoryNewQuantity?: (partNumber: string, location: string, newQuantity: string) => void;
+}> = ({ value, onChange, className, placeholder, textAlign = 'left', searchQuery = '', readOnly = false, inventoryData, activePageName, disableInventory = false, onToggleInventoryConfirm, onUpdateInventoryNewQuantity }) => {
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -153,7 +153,7 @@ const AutoHeightTextarea: React.FC<{
             inventoryData={disableInventory ? undefined : inventoryData} 
             activePageName={activePageName} 
             onToggleInventoryConfirm={onToggleInventoryConfirm}
-            onUpdateInventoryRemarks={onUpdateInventoryRemarks}
+            onUpdateInventoryNewQuantity={onUpdateInventoryNewQuantity}
           />
         ) : (
           <span className="opacity-30">{placeholder}</span>
@@ -184,7 +184,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({
   onDelete, 
   onDuplicate, 
   onToggleInventoryConfirm,
-  onUpdateInventoryRemarks,
+  onUpdateInventoryNewQuantity,
   isEditMode, 
   inventoryData = {}, 
   activePageName = '', 
@@ -376,7 +376,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({
                         activePageName={activePageName}
                         disableInventory={isFirstCol || isEditMode}
                         onToggleInventoryConfirm={onToggleInventoryConfirm}
-                        onUpdateInventoryRemarks={onUpdateInventoryRemarks}
+                        onUpdateInventoryNewQuantity={onUpdateInventoryNewQuantity}
                       />
                     </td>
                   );
