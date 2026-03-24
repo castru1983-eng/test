@@ -27,6 +27,7 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
   const productName = inventoryData?.name || '';
   const category = inventoryData?.category || '';
   const newQuantityValue = inventoryData?.newQuantity || '';
+  const originalRemarks = inventoryData?.remarks || '';
 
   const updatePosition = () => {
     if (triggerRef.current) {
@@ -131,6 +132,13 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
         <div className={`text-6xl font-black italic tracking-tighter mb-4 drop-shadow-[3px_3px_0px_white] ${isConfirmed ? 'text-green-600' : 'text-blue-600'}`}>
            {inventoryValue !== undefined ? inventoryValue : <span className="text-red-500 text-base font-normal not-italic">查無資料</span>}
         </div>
+
+        {originalRemarks && (
+          <div className="mb-6 p-4 bg-gray-50 border-2 border-black rounded-2xl text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <label className="text-[10px] font-black uppercase text-gray-500 block mb-1 tracking-wider">原始備註</label>
+            <p className="text-sm font-bold text-gray-800 leading-relaxed">{originalRemarks}</p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-2 mb-6">
           <label className="text-[10px] font-black uppercase text-gray-400 tracking-wider">

@@ -18,6 +18,7 @@ export interface InventoryItem {
   name?: string;
   category?: string;
   newQuantity?: string;
+  remarks?: string;
 }
 
 export type InventoryData = Record<string, Record<string, InventoryItem>>;

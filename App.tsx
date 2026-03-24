@@ -358,7 +358,8 @@ const App: React.FC = () => {
           const locationKey = findExcelKey(['產品位置', '位置', 'location', '儲位', '存放位置']);
           const quantityKey = findExcelKey(['庫存數量', '數量', 'qty', 'quantity', '庫存']);
           const confirmKey = findExcelKey(['數量確認', '核對', '確認', 'check', 'status']);
-          const remarksKey = findExcelKey(['新數量', '備註', 'remarks', 'note', '備註欄', '其他']);
+          const newQuantityKey = findExcelKey(['新數量', 'new_qty', 'new_quantity']);
+          const remarksKey = findExcelKey(['備註', 'remarks', 'note', '備註欄', '其他']);
           
           const rawPN = String(cleanRow[partNumberKey || ''] || '').trim();
           if (!rawPN) return;
@@ -375,7 +376,8 @@ const App: React.FC = () => {
                          || tableMetadata[normPN]?.category 
                          || (newInventory[rawPN] ? Object.values(newInventory[rawPN])[0]?.category : '');
           
-          const importedNewQuantity = remarksKey ? String(cleanRow[remarksKey] || '').trim() : '';
+          const importedNewQuantity = newQuantityKey ? String(cleanRow[newQuantityKey] || '').trim() : '';
+          const importedRemarks = remarksKey ? String(cleanRow[remarksKey] || '').trim() : '';
 
           const hasStandardLocation = locationKey && cleanRow[locationKey];
           if (hasStandardLocation) {
@@ -383,12 +385,19 @@ const App: React.FC = () => {
             const location = String(cleanRow[locationKey]).trim();
             const quantity = quantityKey ? cleanRow[quantityKey] : '';
             const confirmed = confirmKey ? (['V', 'OK', 'TRUE'].includes(String(cleanRow[confirmKey]).toUpperCase().trim())) : false;
-            newInventory[rawPN][location] = { quantity, confirmed, name: productName, category, newQuantity: importedNewQuantity };
+            newInventory[rawPN][location] = { 
+              quantity, 
+              confirmed, 
+              name: productName, 
+              category, 
+              newQuantity: importedNewQuantity,
+              remarks: importedRemarks
+            };
           } else {
             // 交叉表格式：料號, 廠區A, 廠區B...
             originalKeys.forEach(origKey => {
               const cleanK = origKey.replace(/[\s\u3000]/g, '').toLowerCase();
-              const isReserved = [partNumberKey, productNameKey, categoryKey, locationKey, quantityKey, confirmKey, '數量確認', remarksKey].includes(cleanK);
+              const isReserved = [partNumberKey, productNameKey, categoryKey, locationKey, quantityKey, confirmKey, '數量確認', newQuantityKey, remarksKey].includes(cleanK);
               if (!isReserved) {
                 const val = row[origKey];
                 if (val !== undefined && val !== null && val !== "") {
@@ -397,7 +406,8 @@ const App: React.FC = () => {
                     confirmed: false,
                     name: productName,
                     category,
-                    newQuantity: importedNewQuantity
+                    newQuantity: importedNewQuantity,
+                    remarks: importedRemarks
                   };
                 }
               }
@@ -700,8 +710,8 @@ const App: React.FC = () => {
 
     console.log('Final Scraped Metadata Map:', tableMetadata);
 
-    // 建立 CSV 標題：料號, 品名, 產品類別, 產品位置, 庫存數量, 數量確認, 新數量
-    const headers = ['料號', '品名', '產品類別', '產品位置', '庫存數量', '數量確認', '新數量'];
+    // 建立 CSV 標題：料號, 品名, 產品類別, 產品位置, 庫存數量, 數量確認, 備註, 新數量
+    const headers = ['料號', '品名', '產品類別', '產品位置', '庫存數量', '數量確認', '備註', '新數量'];
     const rows: string[][] = [];
 
     Object.entries(inventoryData).forEach(([partNumber, locMap]) => {
@@ -720,6 +730,7 @@ const App: React.FC = () => {
           location,
           data.quantity.toString(),
           data.confirmed ? 'V' : '',
+          data.remarks || '',
           data.newQuantity || ''
         ]);
       });
