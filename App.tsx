@@ -710,8 +710,8 @@ const App: React.FC = () => {
 
     console.log('Final Scraped Metadata Map:', tableMetadata);
 
-    // 建立 CSV 標題：料號, 品名, 產品類別, 產品位置, 庫存數量, 數量確認, 備註, 新數量
-    const headers = ['料號', '品名', '產品類別', '產品位置', '庫存數量', '數量確認', '備註', '新數量'];
+    // 建立 CSV 標題：料號, 品名, 產品類別, 產品位置, 庫存數量, 數量確認, 新數量, 備註
+    const headers = ['料號', '品名', '產品類別', '產品位置', '庫存數量', '數量確認', '新數量', '備註'];
     const rows: string[][] = [];
 
     Object.entries(inventoryData).forEach(([partNumber, locMap]) => {
@@ -730,8 +730,8 @@ const App: React.FC = () => {
           location,
           data.quantity.toString(),
           data.confirmed ? 'V' : '',
-          data.remarks || '',
-          data.newQuantity || ''
+          data.newQuantity || '',
+          data.remarks || ''
         ]);
       });
     });
