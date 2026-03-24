@@ -134,7 +134,7 @@ export const InventoryTooltip: React.FC<InventoryTooltipProps> = ({ inventory, a
 
         <div className="flex flex-col gap-2 mb-6">
           <label className="text-[10px] font-black uppercase text-gray-400 tracking-wider">
-            新庫存填寫 (對應匯出備註)
+            新數量填寫 (對應匯出)
           </label>
           <div className="relative">
             <i className="fas fa-pen-to-square absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>

@@ -358,7 +358,7 @@ const App: React.FC = () => {
           const locationKey = findExcelKey(['產品位置', '位置', 'location', '儲位', '存放位置']);
           const quantityKey = findExcelKey(['庫存數量', '數量', 'qty', 'quantity', '庫存']);
           const confirmKey = findExcelKey(['數量確認', '核對', '確認', 'check', 'status']);
-          const remarksKey = findExcelKey(['備註', 'remarks', 'note', '備註欄', '其他']);
+          const remarksKey = findExcelKey(['新數量', '備註', 'remarks', 'note', '備註欄', '其他']);
           
           const rawPN = String(cleanRow[partNumberKey || ''] || '').trim();
           if (!rawPN) return;
@@ -700,8 +700,8 @@ const App: React.FC = () => {
 
     console.log('Final Scraped Metadata Map:', tableMetadata);
 
-    // 建立 CSV 標題：料號, 品名, 產品類別, 產品位置, 庫存數量, 數量確認, 備註
-    const headers = ['料號', '品名', '產品類別', '產品位置', '庫存數量', '數量確認', '備註'];
+    // 建立 CSV 標題：料號, 品名, 產品類別, 產品位置, 庫存數量, 數量確認, 新數量
+    const headers = ['料號', '品名', '產品類別', '產品位置', '庫存數量', '數量確認', '新數量'];
     const rows: string[][] = [];
 
     Object.entries(inventoryData).forEach(([partNumber, locMap]) => {
