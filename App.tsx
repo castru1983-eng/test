@@ -301,6 +301,13 @@ const App: React.FC = () => {
       setInventoryData(prev => {
         const newInventory: InventoryData = JSON.parse(JSON.stringify(prev)); 
         
+        // 匯入新表時，先清空所有舊的備註內容 (盤點備註)
+        Object.keys(newInventory).forEach(pn => {
+          Object.keys(newInventory[pn]).forEach(loc => {
+            newInventory[pn][loc].remarks = '';
+          });
+        });
+        
         // 1. 從現有表格抓取最新 metadata 對照表 (Scraper)
         const tableMetadata: Record<string, { name: string, category: string }> = {};
         pages.forEach(page => {
@@ -376,7 +383,7 @@ const App: React.FC = () => {
             const location = String(cleanRow[locationKey]).trim();
             const quantity = quantityKey ? cleanRow[quantityKey] : '';
             const confirmed = confirmKey ? (['V', 'OK', 'TRUE'].includes(String(cleanRow[confirmKey]).toUpperCase().trim())) : false;
-            newInventory[rawPN][location] = { quantity, confirmed, name: productName, category, remarks: remarks || (newInventory[rawPN][location]?.remarks || '') };
+            newInventory[rawPN][location] = { quantity, confirmed, name: productName, category, remarks: remarks };
           } else {
             // 交叉表格式：料號, 廠區A, 廠區B...
             originalKeys.forEach(origKey => {
@@ -390,7 +397,7 @@ const App: React.FC = () => {
                     confirmed: false,
                     name: productName,
                     category,
-                    remarks: remarks || (newInventory[rawPN][origKey]?.remarks || '')
+                    remarks: remarks
                   };
                 }
               }
