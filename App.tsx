@@ -301,10 +301,11 @@ const App: React.FC = () => {
       setInventoryData(prev => {
         const newInventory: InventoryData = JSON.parse(JSON.stringify(prev)); 
         
-        // 匯入新表時，先清空所有舊的新數量內容 (盤點紀錄)
+        // 匯入新表時，先清空所有舊的盤點與備註內容
         Object.keys(newInventory).forEach(pn => {
           Object.keys(newInventory[pn]).forEach(loc => {
             newInventory[pn][loc].newQuantity = '';
+            newInventory[pn][loc].remarks = '';
           });
         });
         
