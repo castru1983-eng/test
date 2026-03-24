@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as xlsx from 'xlsx';
-import { TableData, PageData } from './types.ts';
+import { TableData, PageData, InventoryData } from './types.ts';
 import { TableEditor } from './components/TableEditor.tsx';
 
 const STORAGE_KEY = 'table_architect_v5_final';
@@ -23,7 +23,7 @@ const App: React.FC = () => {
   const [isEditingPageName, setIsEditingPageName] = useState<string | null>(null);
   const [pageIdToConfirmDelete, setPageIdToConfirmDelete] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(true); 
-  const [inventoryData, setInventoryData] = useState<Record<string, Record<string, { quantity: number | string, confirmed: boolean, name?: string, category?: string }>>>({});
+  const [inventoryData, setInventoryData] = useState<InventoryData>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inventoryInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,6 +77,28 @@ const App: React.FC = () => {
       localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(inventoryData));
     }
   }, [inventoryData]);
+
+  const updateInventoryRemarks = (partNumber: string, location: string, remarks: string) => {
+    if (!partNumber || !location) return;
+    
+    setInventoryData(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      const pnKey = Object.keys(next).find(k => k.toLowerCase().trim() === partNumber.toLowerCase().trim());
+      if (!pnKey) return prev;
+
+      const locKey = Object.keys(next[pnKey]).find(l => {
+        const k1 = l.toLowerCase().trim();
+        const k2 = location.toLowerCase().trim();
+        return k1.includes(k2) || k2.includes(k1);
+      });
+
+      if (locKey) {
+        next[pnKey][locKey].remarks = remarks;
+        return next;
+      }
+      return prev;
+    });
+  };
 
   const toggleInventoryConfirm = (partNumber: string, location: string) => {
     if (!partNumber || !location) return;
@@ -277,7 +299,7 @@ const App: React.FC = () => {
       if (jsonData.length === 0) return;
       
       setInventoryData(prev => {
-        const newInventory: Record<string, Record<string, { quantity: number | string, confirmed: boolean, name?: string, category?: string }>> = JSON.parse(JSON.stringify(prev)); 
+        const newInventory: InventoryData = JSON.parse(JSON.stringify(prev)); 
         
         // 1. 從現有表格抓取最新 metadata 對照表 (Scraper)
         const tableMetadata: Record<string, { name: string, category: string }> = {};
@@ -329,6 +351,7 @@ const App: React.FC = () => {
           const locationKey = findExcelKey(['產品位置', '位置', 'location', '儲位', '存放位置']);
           const quantityKey = findExcelKey(['庫存數量', '數量', 'qty', 'quantity', '庫存']);
           const confirmKey = findExcelKey(['數量確認', '核對', '確認', 'check', 'status']);
+          const remarksKey = findExcelKey(['備註', 'remarks', 'note', '備註欄', '其他']);
           
           const rawPN = String(cleanRow[partNumberKey || ''] || '').trim();
           if (!rawPN) return;
@@ -345,18 +368,20 @@ const App: React.FC = () => {
                          || tableMetadata[normPN]?.category 
                          || (newInventory[rawPN] ? Object.values(newInventory[rawPN])[0]?.category : '');
           
+          const remarks = remarksKey ? String(cleanRow[remarksKey] || '').trim() : '';
+
           const hasStandardLocation = locationKey && cleanRow[locationKey];
           if (hasStandardLocation) {
             // 標準格式： 料號, 位置, 數量
             const location = String(cleanRow[locationKey]).trim();
             const quantity = quantityKey ? cleanRow[quantityKey] : '';
             const confirmed = confirmKey ? (['V', 'OK', 'TRUE'].includes(String(cleanRow[confirmKey]).toUpperCase().trim())) : false;
-            newInventory[rawPN][location] = { quantity, confirmed, name: productName, category };
+            newInventory[rawPN][location] = { quantity, confirmed, name: productName, category, remarks: remarks || (newInventory[rawPN][location]?.remarks || '') };
           } else {
             // 交叉表格式：料號, 廠區A, 廠區B...
             originalKeys.forEach(origKey => {
               const cleanK = origKey.replace(/[\s\u3000]/g, '').toLowerCase();
-              const isReserved = [partNumberKey, productNameKey, categoryKey, locationKey, quantityKey, confirmKey, '數量確認'].includes(cleanK);
+              const isReserved = [partNumberKey, productNameKey, categoryKey, locationKey, quantityKey, confirmKey, '數量確認', remarksKey].includes(cleanK);
               if (!isReserved) {
                 const val = row[origKey];
                 if (val !== undefined && val !== null && val !== "") {
@@ -364,7 +389,8 @@ const App: React.FC = () => {
                     quantity: val, 
                     confirmed: false,
                     name: productName,
-                    category
+                    category,
+                    remarks: remarks || (newInventory[rawPN][origKey]?.remarks || '')
                   };
                 }
               }
@@ -667,8 +693,8 @@ const App: React.FC = () => {
 
     console.log('Final Scraped Metadata Map:', tableMetadata);
 
-    // 建立 CSV 標題：料號, 品名, 產品類別, 產品位置, 庫存數量, 數量確認
-    const headers = ['料號', '品名', '產品類別', '產品位置', '庫存數量', '數量確認'];
+    // 建立 CSV 標題：料號, 品名, 產品類別, 產品位置, 庫存數量, 數量確認, 備註
+    const headers = ['料號', '品名', '產品類別', '產品位置', '庫存數量', '數量確認', '備註'];
     const rows: string[][] = [];
 
     Object.entries(inventoryData).forEach(([partNumber, locMap]) => {
@@ -686,7 +712,8 @@ const App: React.FC = () => {
           data.category || fallbackCategory,
           location,
           data.quantity.toString(),
-          data.confirmed ? 'V' : ''
+          data.confirmed ? 'V' : '',
+          data.remarks || ''
         ]);
       });
     });
@@ -866,6 +893,7 @@ const App: React.FC = () => {
                   setPages(prev => prev.map(p => p.id === activePageId ? { ...p, tables: [newTable, ...p.tables] } : p));
                 }} 
                 onToggleInventoryConfirm={toggleInventoryConfirm}
+                onUpdateInventoryRemarks={updateInventoryRemarks}
                 searchQuery={searchQuery} 
                 isFirstMatch={table.id === firstMatchTableId}
               />

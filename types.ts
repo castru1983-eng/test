@@ -12,6 +12,16 @@ export interface PageData {
   tables: TableData[];
 }
 
+export interface InventoryItem {
+  quantity: number | string;
+  confirmed: boolean;
+  name?: string;
+  category?: string;
+  remarks?: string;
+}
+
+export type InventoryData = Record<string, Record<string, InventoryItem>>;
+
 export enum TableActionType {
   ADD_ROW = 'ADD_ROW',
   ADD_COLUMN = 'ADD_COLUMN',
