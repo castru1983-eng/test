@@ -286,6 +286,30 @@ const App: React.FC = () => {
     ));
   };
 
+  const moveTableUp = (id: string) => {
+    if (!isEditMode) return;
+    setPages(prev => prev.map(p => {
+      if (p.id !== activePageId) return p;
+      const idx = p.tables.findIndex(t => t.id === id);
+      if (idx <= 0) return p;
+      const newTables = [...p.tables];
+      [newTables[idx - 1], newTables[idx]] = [newTables[idx], newTables[idx - 1]];
+      return { ...p, tables: newTables };
+    }));
+  };
+
+  const moveTableDown = (id: string) => {
+    if (!isEditMode) return;
+    setPages(prev => prev.map(p => {
+      if (p.id !== activePageId) return p;
+      const idx = p.tables.findIndex(t => t.id === id);
+      if (idx === -1 || idx === p.tables.length - 1) return p;
+      const newTables = [...p.tables];
+      [newTables[idx], newTables[idx + 1]] = [newTables[idx + 1], newTables[idx]];
+      return { ...p, tables: newTables };
+    }));
+  };
+
   const handleInventoryImportClick = () => {
     if (!isEditMode) return;
     inventoryInputRef.current?.click();
@@ -911,6 +935,10 @@ const App: React.FC = () => {
                   const newTable = { ...JSON.parse(JSON.stringify(table)), id: generateId(), title: `${table.title} (副本)` };
                   setPages(prev => prev.map(p => p.id === activePageId ? { ...p, tables: [newTable, ...p.tables] } : p));
                 }} 
+                onMoveUp={() => moveTableUp(table.id)}
+                onMoveDown={() => moveTableDown(table.id)}
+                isFirstTable={activePage?.tables.findIndex(t => t.id === table.id) === 0}
+                isLastTable={activePage?.tables.findIndex(t => t.id === table.id) === (activePage?.tables.length || 0) - 1}
                 onToggleInventoryConfirm={toggleInventoryConfirm}
                 onUpdateInventoryNewQuantity={updateInventoryNewQuantity}
                 searchQuery={searchQuery} 

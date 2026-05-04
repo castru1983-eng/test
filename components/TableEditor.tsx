@@ -7,6 +7,10 @@ interface TableEditorProps {
   onUpdate: (updatedTable: TableData) => void;
   onDelete: (id: string) => void;
   onDuplicate: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  isFirstTable?: boolean;
+  isLastTable?: boolean;
   onToggleInventoryConfirm?: (partNumber: string, location: string) => void;
   onUpdateInventoryNewQuantity?: (partNumber: string, location: string, newQuantity: string) => void;
   isEditMode: boolean;
@@ -183,6 +187,10 @@ export const TableEditor: React.FC<TableEditorProps> = ({
   onUpdate, 
   onDelete, 
   onDuplicate, 
+  onMoveUp,
+  onMoveDown,
+  isFirstTable,
+  isLastTable,
   onToggleInventoryConfirm,
   onUpdateInventoryNewQuantity,
   isEditMode, 
@@ -288,8 +296,14 @@ export const TableEditor: React.FC<TableEditorProps> = ({
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isEditMode && !searchQuery && (
+            <>
+              <button onClick={onMoveUp} disabled={isFirstTable} title="上移表單" className={`p-2 border-2 border-black rounded-lg transition-all text-sm font-black ${isFirstTable ? 'opacity-30 cursor-not-allowed bg-gray-100' : 'hover:bg-gray-100 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5'}`}><i className="fas fa-arrow-up"></i></button>
+              <button onClick={onMoveDown} disabled={isLastTable} title="下移表單" className={`p-2 border-2 border-black rounded-lg transition-all text-sm font-black ${isLastTable ? 'opacity-30 cursor-not-allowed bg-gray-100' : 'hover:bg-gray-100 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5'}`}><i className="fas fa-arrow-down"></i></button>
+            </>
+          )}
           {isEditMode && (
-            <button onClick={onDuplicate} title="複製表格" className="p-2 border-2 border-black rounded-lg hover:bg-gray-100 transition-all text-sm font-black"><i className="fas fa-copy"></i></button>
+            <button onClick={onDuplicate} title="複製表格" className="p-2 border-2 border-black rounded-lg hover:bg-gray-100 transition-all text-sm font-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5"><i className="fas fa-copy"></i></button>
           )}
           <button onClick={downloadCSV} title="匯出 CSV" className="p-2 border-2 border-black rounded-lg bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 active:translate-y-0.5 transition-all text-sm font-black"><i className="fas fa-download"></i></button>
           
